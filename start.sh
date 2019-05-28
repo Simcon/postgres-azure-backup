@@ -1,5 +1,23 @@
 #!/bin/bash
 
+set_all_secrets(){
+    if [ -z $SECRETS ];
+    then
+        echo "SECRETS is not set, no secrets to set"
+    else
+        pushd $SECRETS
+        for secret in * ; do
+            echo "setting $secret"
+            local val="$(< "${secret}")"
+            
+            export $secret=$val
+        done
+        popd
+    fi
+}
+
+set_all_secrets
+
 if [ "${POSTGRES_HOST}" = "" ]; then
   if [ -n "${POSTGRES_PORT_5432_TCP_ADDR}" ]; then
     POSTGRES_HOST=$POSTGRES_PORT_5432_TCP_ADDR
@@ -38,7 +56,7 @@ if [ "$1" == "backup" ]; then
         pg_dump --host=$POSTGRES_HOST --port=$POSTGRES_PORT --username=$POSTGRES_USER $db | gzip > "/tmp/$dumpfile.gz"
 
         if [ $? == 0 ]; then
-            yes | /usr/local/bin/azure storage blob upload /tmp/$db.gz $AZURE_STORAGE_CONTAINER -c "DefaultEndpointsProtocol=https;BlobEndpoint=https://$AZURE_STORAGE_ACCOUNT.blob.core.windows.net/;AccountName=$AZURE_STORAGE_ACCOUNT;AccountKey=$AZURE_STORAGE_ACCESS_KEY"
+            yes | az storage blob upload --file /tmp/$dumpfile.gz --name $dumpfile.gz --container-name $AZURE_STORAGE_CONTAINER 
 
             if [ $? == 0 ]; then
                 rm /tmp/$dumpfile.gz
