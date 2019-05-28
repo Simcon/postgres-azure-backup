@@ -34,15 +34,16 @@ if [ "$1" == "backup" ]; then
     for db in $databases; do
         echo "dumping $db"
 
-        pg_dump --host=$POSTGRES_HOST --port=$POSTGRES_PORT --username=$POSTGRES_USER $db | gzip > "/tmp/$db.gz"
+        dumpfile=$db-$(date +"%Y-%m-%dT%H:%M:%SZ")
+        pg_dump --host=$POSTGRES_HOST --port=$POSTGRES_PORT --username=$POSTGRES_USER $db | gzip > "/tmp/$dumpfile.gz"
 
         if [ $? == 0 ]; then
             yes | /usr/local/bin/azure storage blob upload /tmp/$db.gz $AZURE_STORAGE_CONTAINER -c "DefaultEndpointsProtocol=https;BlobEndpoint=https://$AZURE_STORAGE_ACCOUNT.blob.core.windows.net/;AccountName=$AZURE_STORAGE_ACCOUNT;AccountKey=$AZURE_STORAGE_ACCESS_KEY"
 
             if [ $? == 0 ]; then
-                rm /tmp/$db.gz
+                rm /tmp/$dumpfile.gz
             else
-                >&2 echo "couldn't transfer $db.gz to Azure"
+                >&2 echo "couldn't transfer $dumpfile.gz to Azure"
             fi
         else
             >&2 echo "couldn't dump $db"
