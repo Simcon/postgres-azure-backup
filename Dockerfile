@@ -3,7 +3,7 @@ FROM ubuntu:bionic
 ENV DEBIAN_FRONTEND noninteractive
 
 RUN apt-get update -y -q && \
-    apt-get install -y nodejs-legacy curl wget npm 
+    apt-get install -y nodejs curl wget npm 
 
 RUN npm install -g n azure-cli
 RUN n 0.12.7
